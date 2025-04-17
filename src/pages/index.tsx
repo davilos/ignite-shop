@@ -1,16 +1,26 @@
+import "keen-slider/keen-slider.min.css";
 import Image from "next/image";
+import Stripe from "stripe";
 
-import { HomeContainer, Product } from "@/styles/pages/home";
+import { stripe } from "@/lib/stripe";
+import { GetServerSideProps } from "next";
 import { useKeenSlider } from "keen-slider/react";
 
-import camiseta1 from "../assets/1.png";
-import camiseta2 from "../assets/2.png";
-import camiseta3 from "../assets/3.png";
-import camiseta4 from "../assets/4.png";
+import { HomeContainer, Product } from "@/styles/pages/home";
+import { dynamicBlurDataUrl } from "@/scripts/dynamicBlurDataUrl";
 
-import "keen-slider/keen-slider.min.css";
+interface HomeProps {
+  products: {
+    id: string;
+    name: string;
+    description: string;
+    imageUrl: string;
+    blurHash: string;
+    price: number;
+  }[];
+}
 
-export default function Home() {
+export default function Home({ products }: HomeProps) {
   const [sliderRef] = useKeenSlider({
     slides: {
       perView: 3,
@@ -20,41 +30,53 @@ export default function Home() {
 
   return (
     <HomeContainer ref={sliderRef} className="keen-slider">
-      <Product className="keen-slider__slide">
-        <Image src={camiseta1} width={520} height={480} alt="" />
+      {products.map((product) => {
+        return (
+          <Product key={product.id} className="keen-slider__slide">
+            <Image
+              src={product.imageUrl}
+              width={520}
+              height={480}
+              alt=""
+              placeholder="blur"
+              blurDataURL={product.blurHash}
+            />
 
-        <footer>
-          <strong>Camiseta X</strong>
-          <span>R$ 79,90</span>
-        </footer>
-      </Product>
-
-      <Product className="keen-slider__slide">
-        <Image src={camiseta2} width={520} height={480} alt="" />
-
-        <footer>
-          <strong>Camiseta X</strong>
-          <span>R$ 79,90</span>
-        </footer>
-      </Product>
-
-      <Product className="keen-slider__slide">
-        <Image src={camiseta3} width={520} height={480} alt="" />
-
-        <footer>
-          <strong>Camiseta X</strong>
-          <span>R$ 79,90</span>
-        </footer>
-      </Product>
-
-      <Product className="keen-slider__slide">
-        <Image src={camiseta4} width={520} height={480} alt="" />
-
-        <footer>
-          <strong>Camiseta X</strong>
-          <span>R$ 79,90</span>
-        </footer>
-      </Product>
+            <footer>
+              <strong>{product.name}</strong>
+              <span>{product.price}</span>
+            </footer>
+          </Product>
+        );
+      })}
     </HomeContainer>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  const response = await stripe.products.list({
+    expand: ["data.default_price"],
+  });
+
+  const products = await Promise.all(
+    response.data.map(async (product) => {
+      const defaultPrice = product.default_price as Stripe.Price;
+      const blurHash = await dynamicBlurDataUrl(product.images[0]);
+
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        imageUrl: product.images[0],
+        blurHash,
+        price: defaultPrice.unit_amount! / 100,
+      };
+    })
+  );
+
+  return {
+    props: {
+      products,
+    },
+  };
+};
