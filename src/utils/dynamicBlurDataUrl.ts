@@ -1,7 +1,9 @@
-const baseUrl =
-	process.env.NODE_ENV === "development"
-		? "http://localhost:3000/"
-		: process.env.NEXT_PUBLIC_DOMAIN;
+// const baseUrl =
+// 	process.env.NODE_ENV === "development"
+// 		? "http://localhost:3000/"
+// 		: process.env.NEXT_PUBLIC_DOMAIN;
+
+const baseUrl = "http://127.0.0.1:3000/";
 
 export async function dynamicBlurDataUrl(url: string) {
 	const base64str = await fetch(
