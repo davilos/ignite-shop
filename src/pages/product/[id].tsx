@@ -3,6 +3,7 @@ import {
   ProductContainer,
   ProductDetails,
 } from "@/styles/pages/product";
+import { GetStaticProps } from "next";
 import { useRouter } from "next/router";
 
 export default function Product() {
@@ -28,3 +29,10 @@ export default function Product() {
     </ProductContainer>
   );
 }
+
+export const getStaticProps: GetStaticProps = async () => {
+  return {
+    props: {},
+    revalidate: 60 * 60 * 1, // 1 hour
+  };
+};
